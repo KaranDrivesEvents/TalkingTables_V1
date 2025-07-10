@@ -1,0 +1,53 @@
+name: Deploy to LangGraph Cloud
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.11
+    
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+    
+    - name: Install dependencies
+      run: poetry install --no-interaction
+    
+    - name: Run tests before deployment
+      run: poetry run pytest tests/ -v
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        PARSER_SERVICE_URL: http://localhost:5001
+    
+    - name: Deploy to LangGraph Cloud
+      run: |
+        # Install LangGraph CLI
+        pip install langgraph-cli
+        
+        # Deploy to LangGraph Cloud
+        langgraph deploy
+      env:
+        LANGGRAPH_CLOUD_API_KEY: ${{ secrets.LANGGRAPH_CLOUD_API_KEY }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+        PARSER_SERVICE_URL: ${{ secrets.PARSER_SERVICE_URL }}
+    
+    - name: Notify deployment status
+      if: always()
+      run: |
+        if [ ${{ job.status }} == 'success' ]; then
+          echo "✅ Deployment successful"
+        else
+          echo "❌ Deployment failed"
+        fi 

@@ -1,0 +1,9 @@
+{
+  "dependencies": [
+    "."
+  ],
+  "graphs": {
+    "talking_tables_agent": "./src/agent/graph.py:create_graph"
+  },
+  "env": ".env"
+} 
