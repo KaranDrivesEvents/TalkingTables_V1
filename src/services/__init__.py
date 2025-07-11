@@ -1,7 +1,8 @@
-"""Service layer for external API interactions."""
+"""Services module for TalkingTables."""
 
-from .parser_client import make_parser_request
+from .parser_client import get_parser_client, DBMLParserClient
 
 __all__ = [
-    "make_parser_request"
+    "get_parser_client",
+    "DBMLParserClient"
 ] 

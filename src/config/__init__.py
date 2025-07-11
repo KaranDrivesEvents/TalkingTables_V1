@@ -1,8 +1,25 @@
-"""Configuration management for the agent."""
+"""Configuration module for TalkingTables."""
 
-from .settings import Settings, get_settings
+from .settings import (
+    OPENAI_API_KEY,
+    PARSER_SERVICE_URL,
+    LLM_MODEL,
+    LLM_TEMPERATURE,
+    LLM_MAX_TOKENS,
+    PARSER_TIMEOUT,
+    PARSER_RETRY_ATTEMPTS,
+    LANGSMITH_API_KEY,
+    LANGSMITH_PROJECT
+)
 
 __all__ = [
-    "Settings",
-    "get_settings"
+    "OPENAI_API_KEY",
+    "PARSER_SERVICE_URL", 
+    "LLM_MODEL",
+    "LLM_TEMPERATURE",
+    "LLM_MAX_TOKENS",
+    "PARSER_TIMEOUT",
+    "PARSER_RETRY_ATTEMPTS",
+    "LANGSMITH_API_KEY",
+    "LANGSMITH_PROJECT"
 ] 

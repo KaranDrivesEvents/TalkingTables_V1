@@ -1,14 +1,21 @@
-"""Tool to read previously failed/updated DBML schema from state."""
+"""Tool to read updated DBML schema from state."""
 
+from typing import Annotated
 from langchain_core.tools import tool
-from ..models.state import get_state
+from langgraph.prebuilt import InjectedState
+from src.models.state import TalkingTablesState
 
 
 @tool
-def read_updated_dbml() -> str:
-    """INTERNAL: Get previously failed schema for agent comparison."""
-    try:
-        state = get_state()
-        return state.updated_dbml or ""
-    except Exception as e:
-        return f"Error reading updated schema: {str(e)}" 
+def read_updated_dbml(state: Annotated[TalkingTablesState, InjectedState]) -> str:
+    """Read the updated DBML schema from the conversation state.
+    
+    Returns:
+        str: The updated DBML schema string
+    """
+    updated_dbml = state.updated_dbml or ""
+    
+    if not updated_dbml:
+        return "No updated DBML schema found in state. Please provide the updated DBML schema first."
+    
+    return f"Updated DBML schema retrieved successfully:\n\n{updated_dbml}" 
