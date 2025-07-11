@@ -1,306 +1,117 @@
-# 🗣️ Talking Tables Agent
+# TalkingTables Agent
 
-A production-grade conversational ReAct agent for database schema management using a single smart prompt architecture built with LangGraph.
+A sophisticated database schema assistant powered by LangGraph and LangChain that helps users design, modify, and analyze database schemas using DBML (Database Markup Language). With interactive schema in the UI-canvas.  
 
-## 🎯 Overview
+## 🤖 What is TalkingTables?
 
-The Talking Tables agent provides an intelligent conversational interface for database schema management. It uses a unified prompt system that automatically determines the appropriate response mode based on user intent:
+TalkingTables is an AI-powered database schema assistant that understands natural language requests and helps you create, modify, and analyze database schemas. It uses DBML (Database Markup Language) as its schema representation and provides intelligent recommendations, validation, and visualization capabilities.
 
-- **🔧 Directive Mode**: Apply schema changes directly with sensible defaults
-- **💬 Collaborative Mode**: Explore database design possibilities and get guidance  
-- **🔄 Error Resolution Mode**: Handle syntax errors with self-correction and explain logical conflicts
+### Key Features
 
-## ✨ Features
-
-### Core Capabilities
-- **Single Smart Prompt**: Unified conversational interface handling all interaction modes
-- **Automatic Tool Binding**: Uses `llm.bind_tools()` for seamless LangChain integration
-- **Self-Correction**: Automatic syntax error detection and retry logic
-- **Context-Aware**: Maintains schema state and conversation history
-- **Production-Grade**: Pydantic validation, comprehensive error handling, and monitoring
-
-### Architecture Highlights
-- **LangGraph Foundation**: Robust workflow orchestration
-- **Node-Level Abstraction**: Clean separation of concerns
-- **State Management**: Pydantic-based validation with LangGraph compatibility
-- **HTTP Integration**: Parser service client with retry logic and health checks
-- **Configuration Management**: TOML + environment variable support
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Python 3.11+
-- Poetry (for dependency management)
-- OpenAI API key
-- DBML parser service (running on port 5001 by default)
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd talking-tables-agent
-   ```
-
-2. **Install dependencies**
-   ```bash
-   poetry install
-   ```
-
-3. **Set up environment**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your API keys
-   ```
-
-4. **Configure settings** (optional)
-   ```bash
-   # Edit config.toml for custom configuration
-   vim config.toml
-   ```
-
-### Running Locally
-
-```bash
-# Interactive mode
-poetry run python -m src.main
-
-# Or using poetry script
-poetry run talking-tables
-```
-
-### Example Interactions
-
-#### Directive Mode (Apply Changes)
-```
-> Add a users table with email and name fields
-✅ Schema changes successfully applied
-
-> Remove the email field from users table  
-✅ Schema changes successfully applied
-
-> Add a posts table that references users
-✅ Schema changes successfully applied
-```
-
-#### Collaborative Mode (Explore & Guide)
-```
-> What's the best way to model user authentication?
-💬 For user authentication, I'd recommend considering several approaches based on your requirements...
-
-> How should I structure tables for a blog system?
-💬 A typical blog system benefits from these core entities and relationships...
-```
+- **Natural Language Processing**: Ask questions about your database design in plain English
+- **DBML Schema Management**: Create and modify database schemas using DBML syntax
+- **Intelligent Validation**: Automatic parsing and validation of schema changes
+- **Visual Schema Analysis**: Get JSON representations for UI rendering
+- **Change Tracking**: Compare current and updated schemas to see differences
+- **Best Practices Guidance**: Receive recommendations for optimal database design
 
 ## 🏗️ Architecture
 
-### System Flow
-```mermaid
-graph TD
-    A[User Message] --> B[main_processor<br/>Single Smart Prompt]
-    B --> C{Mode Selection}
-    
-    C -->|Directive Mode| D[Apply Schema Changes]
-    C -->|Collaborative Mode| E[Provide Guidance]
-    C -->|Error Resolution Mode| F[Handle Error]
-    
-    D --> G[call_dbml_parser<br/>Validate Changes]
-    G --> H[system_router]
-    
-    H --> I{Parser Result?}
-    I -->|Success| J[commit_schema<br/>Apply Changes]
-    I -->|Syntax Error| K[Loop Back with<br/>Fix Message]
-    I -->|Logical Error| L[Loop Back with<br/>Explain Message]
-    
-    J --> END1[Success Response]
-    K --> B
-    L --> B
-    E --> END2[Guidance Response]
-    F --> END3[Error Explanation]
-```
+TalkingTables uses a custom **StateGraph** architecture built with LangGraph, providing:
 
 ### Core Components
 
-- **`src/agent/prompts.py`**: Unified prompt template (single source of truth)
-- **`src/agent/state.py`**: Pydantic state management with validation
-- **`src/agent/graph.py`**: LangGraph workflow orchestration
-- **`src/nodes/`**: Individual processing nodes
-- **`src/tools/`**: Bound tools for LangChain compatibility
-- **`src/services/`**: External service integrations
+1. **Agent Node** (`agent_node`): The "brain" that processes user input and decides actions
+2. **Tool Node** (`tool_node`): The "hands" that execute specific operations
+3. **State Management**: Pydantic-based state tracking with message history
+4. **Routing Logic**: Conditional flow control between agent and tools
 
-### Key Design Principles
+### State Management
 
-1. **Single Prompt Architecture**: All user interactions flow through one intelligent prompt
-2. **Automatic Tool Binding**: Uses `llm.bind_tools()` exclusively for LangChain compatibility
-3. **Self-Correction Loops**: Syntax errors automatically retry with fixes
-4. **Context Preservation**: Complete schema state maintained throughout interactions
-5. **Production Robustness**: Comprehensive error handling and validation
+The agent maintains conversation state using a Pydantic model (`TalkingTablesState`) that tracks:
 
-## 🛠️ Development
+- **Messages**: Complete conversation history
+- **Current DBML**: The active database schema
+- **Updated DBML**: Pending schema changes
+- **Schema JSON**: Parsed schema for UI rendering
+- **Diff JSON**: Changes between schema versions
 
-### Setup Development Environment
+## 🛠️ Available Tools
 
-```bash
-# Install dev dependencies
-poetry install --with dev,test
+### 1. `read_current_dbml`
+Retrieves the current database schema from state. Used to understand existing structure before making changes.
 
-# Install pre-commit hooks
-poetry run pre-commit install
+### 2. `read_updated_dbml`
+Internal tool for accessing previously failed schema attempts for comparison and debugging.
 
-# Run tests
-poetry run pytest
+### 3. `call_dbml_parser`
+The core validation tool that:
+- Parses DBML schemas for syntax validation
+- Compares current vs updated schemas
+- Generates JSON representations for UI rendering
+- Tracks schema differences
+- Updates the conversation state with results
 
-# Type checking
-poetry run mypy src
+## 🎯 Interaction Modes
 
-# Code formatting
-poetry run black src tests
-poetry run isort src tests
+### Analytical Mode
+For exploratory questions and schema analysis:
+1. Retrieves current schema
+2. Analyzes structure and relationships
+3. Provides detailed recommendations
+4. Presents DBML code blocks when relevant
+5. Offers numbered suggestions for clarity
 
-# Linting
-poetry run flake8 src tests
-```
+### Directive Mode
+For direct schema modification commands:
+1. **Always** starts by reading current schema
+2. Analyzes existing structure
+3. Creates updated DBML with requested changes
+4. **Immediately** validates changes via parser
+5. Celebrates success or helps fix validation errors
 
-### Project Structure
+## 🔧 Technical Implementation
 
-```
-.
-├── src/
-│   ├── agent/          # Core agent logic
-│   ├── nodes/          # Processing nodes  
-│   ├── tools/          # Bound tools
-│   ├── services/       # External services
-│   ├── config/         # Configuration
-│   └── main.py         # Entry point
-├── tests/              # Test suites
-├── .github/workflows/  # CI/CD pipelines
-├── config.toml         # Configuration file
-├── pyproject.toml      # Dependencies & metadata
-└── langgraph.json      # Deployment config
-```
+### Technology Stack
+- **LangGraph**: Custom StateGraph for workflow management
+- **LangChain**: LLM integration and tool orchestration
+- **OpenAI GPT-4**: Natural language understanding and generation
+- **Pydantic**: Type-safe state management
+- **DBML**: Database schema representation
+- **HTTPX**: Async HTTP client for parser service integration
 
-### Running Tests
+### Key Design Patterns
 
-```bash
-# All tests
-poetry run pytest
+1. **StateGraph Architecture**: Modular, debuggable workflow with clear separation of concerns
+2. **Tool-Based Execution**: LLM decides which tools to use based on user intent
+3. **Conditional Routing**: Smart flow control between agent reasoning and tool execution
+4. **Async Parser Integration**: External DBML parsing service for validation
+5. **Streaming Responses**: Real-time interaction with streaming enabled
 
-# Unit tests only  
-poetry run pytest tests/unit/
+## 🎨 UI Integration
 
-# Integration tests only
-poetry run pytest tests/integration/
+The agent provides structured outputs for UI rendering:
 
-# With coverage
-poetry run pytest --cov=src --cov-report=html
-```
+- **Schema JSON**: Parsed database structure for visualization
+- **Diff JSON**: Change tracking for highlighting modifications
+- **Validation Results**: Success/error messages with detailed feedback
 
-## 🚀 Deployment
+## 🔄 Workflow Flow
 
-### LangGraph Cloud
+1. **User Input**: Natural language request or command
+2. **Agent Processing**: LLM analyzes intent and decides action
+3. **Tool Execution**: Appropriate tools are called based on decision
+4. **State Update**: Results update conversation state
+5. **Response Generation**: Agent provides user-friendly response
+6. **Loop**: Process continues until user request is satisfied
 
-The agent is configured for deployment to LangGraph Cloud:
+## 🌟 Key Benefits
 
-```bash
-# Install LangGraph CLI
-pip install langgraph-cli
+- **Intelligent Schema Design**: AI-powered recommendations for optimal database structure
+- **Natural Language Interface**: No need to learn complex syntax
+- **Validation & Safety**: Automatic parsing and error detection
+- **Version Control**: Track schema changes and differences
+- **Extensible Architecture**: Easy to add new tools and capabilities
+- **Production Ready**: Built for LangGraph Cloud deployment
 
-# Deploy
-langgraph deploy
-```
-
-### Environment Variables
-
-Required for deployment:
-
-```bash
-OPENAI_API_KEY=your_openai_api_key
-PARSER_SERVICE_URL=https://your-parser-service.com
-LANGSMITH_API_KEY=your_langsmith_key  # optional
-LANGGRAPH_CLOUD_API_KEY=your_langgraph_cloud_key
-```
-
-### CI/CD Pipeline
-
-The project includes GitHub Actions workflows:
-
-- **CI**: Testing, linting, type checking, security scans
-- **Deploy**: Automatic deployment to LangGraph Cloud on main branch
-
-## 📊 Monitoring
-
-### LangSmith Integration
-
-The agent integrates with LangSmith for observability:
-
-```python
-# Automatic tracing enabled when LANGSMITH_API_KEY is set
-LANGSMITH_API_KEY=your_key
-LANGSMITH_PROJECT=talking-tables-agent
-```
-
-### Health Checks
-
-```bash
-# Check parser service health
-curl http://localhost:5001/health
-
-# Agent health check built into main.py
-```
-
-## ⚙️ Configuration
-
-### config.toml
-
-```toml
-[agent]
-model = "gpt-4"
-temperature = 0.1
-max_tokens = 4000
-
-[parser_service]
-base_url = "http://localhost:5001"
-timeout = 30
-retry_attempts = 3
-
-[deployment]
-environment = "production"
-log_level = "INFO"
-```
-
-### Environment Variables
-
-See `.env.example` for all available environment variables.
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests and linting (`poetry run pytest && poetry run black src tests`)
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Built with [LangGraph](https://github.com/langchain-ai/langgraph) for workflow orchestration
-- Uses [LangChain](https://github.com/langchain-ai/langchain) for tool binding and LLM integration
-- Pydantic for robust data validation
-- Poetry for modern Python dependency management
-
-## 📞 Support
-
-For questions or issues:
-
-1. Check the [documentation](docs/)
-2. Search [existing issues](https://github.com/your-repo/issues)
-3. Create a [new issue](https://github.com/your-repo/issues/new)
-
----
-
-Built with ❤️ using the single smart prompt architecture for maximum simplicity and robustness.
+TalkingTables transforms database schema design from a technical chore into an intelligent, conversational experience, making database design accessible to everyone while maintaining professional-grade quality and validation. 

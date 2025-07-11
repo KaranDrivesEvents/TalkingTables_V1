@@ -205,3 +205,9 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# LangGraph Cloud specific
+.langgraph_api/
+*.log
+.env.local
+.env.production
