@@ -70,8 +70,22 @@ def call_dbml_parser(
             # This now correctly signals a state update with proper ToolMessage
             return Command(update=state_updates)
         else:
+            # Handle parser service errors (when success=False but no exception)
             error_msg = result.get("error", "Unknown parsing error")
+            if isinstance(error_msg, list):
+                error_msg = "; ".join(error_msg)
             return {"messages": [ToolMessage(f"DBML parsing failed: {error_msg}", tool_call_id=tool_call_id)]}
             
     except Exception as e:
-        return {"messages": [ToolMessage(f"Error calling DBML parser service: {str(e)}", tool_call_id=tool_call_id)]} 
+        error_message = str(e)
+        
+        # Provide more helpful error messages for common issues
+        if "Parser service error:" in error_message:
+            # This is a parsed error from the parser service - pass it through
+            return {"messages": [ToolMessage(f"❌ {error_message}", tool_call_id=tool_call_id)]}
+        elif "Connection" in error_message or "timeout" in error_message.lower():
+            return {"messages": [ToolMessage(f"❌ Connection error: Unable to reach the DBML parser service. Please check if the service is running at {parser_client.base_url}", tool_call_id=tool_call_id)]}
+        elif "500" in error_message or "Internal Server Error" in error_message:
+            return {"messages": [ToolMessage(f"❌ Server error: The DBML parser service encountered an internal error. Please try again or contact support.", tool_call_id=tool_call_id)]}
+        else:
+            return {"messages": [ToolMessage(f"❌ Error calling DBML parser service: {error_message}", tool_call_id=tool_call_id)]} 

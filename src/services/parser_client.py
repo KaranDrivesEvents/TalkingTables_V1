@@ -40,8 +40,40 @@ class DBMLParserClient:
                     
             except httpx.HTTPError as e:
                 logger.warning(f"HTTP error on attempt {attempt + 1}: {e}")
+                
+                # Extract actual error message from response body
+                actual_error = None
+                try:
+                    if hasattr(e, 'response') and e.response is not None:
+                        error_response = e.response.json()
+                        if isinstance(error_response, dict):
+                            # Handle different error response formats
+                            if "errors" in error_response:
+                                errors = error_response["errors"]
+                                if isinstance(errors, list):
+                                    actual_error = "; ".join(errors)
+                                else:
+                                    actual_error = str(errors)
+                            elif "error" in error_response:
+                                actual_error = str(error_response["error"])
+                            elif "message" in error_response:
+                                actual_error = str(error_response["message"])
+                            else:
+                                actual_error = str(error_response)
+                        else:
+                            actual_error = str(error_response)
+                except Exception as parse_error:
+                    logger.warning(f"Could not parse error response: {parse_error}")
+                    actual_error = None
+                
+                # Create a more informative error message
+                if actual_error:
+                    error_msg = f"Parser service error: {actual_error}"
+                else:
+                    error_msg = f"HTTP error: {e}"
+                
                 if attempt == self.retry_attempts - 1:
-                    raise
+                    raise Exception(error_msg)
                 await asyncio.sleep(2 ** attempt)  # Exponential backoff
                 
             except Exception as e:
